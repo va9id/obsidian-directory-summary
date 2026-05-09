@@ -1,11 +1,10 @@
 {
-	"id": "sample-plugin",
-	"name": "Sample Plugin",
+	"id": "obsidian-directory-summary",
+	"name": "Directory Summary",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "Demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
-	"isDesktopOnly": false
+	"description": "Generate a summary note for any directory in your vault.",
+	"isDesktopOnly": false,
+	"author": "Vahid F.",
+	"authorUrl": "https://github.com/va9id"
 }

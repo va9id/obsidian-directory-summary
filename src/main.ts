@@ -1,99 +1,150 @@
-import {App, Editor, MarkdownView, Modal, Notice, Plugin} from 'obsidian';
-import {DEFAULT_SETTINGS, MyPluginSettings, SampleSettingTab} from "./settings";
+import { Notice, Plugin, TAbstractFile, TFile, TFolder } from "obsidian";
+import {
+	DEFAULT_SETTINGS,
+	DirectorySummarySettings,
+	DirectorySummarySettingTab,
+} from "./settings";
+import { COMMAND, CONTEXT_MENU, NOTICE } from "./constants";
 
-// Remember to rename these classes and interfaces!
+interface FileExplorerView {
+	focusedItem?: { file?: TAbstractFile };
+}
 
-export default class MyPlugin extends Plugin {
-	settings: MyPluginSettings;
+export default class DirectorySummaryPlugin extends Plugin {
+	settings!: DirectorySummarySettings;
 
 	async onload() {
 		await this.loadSettings();
 
-		// This creates an icon in the left ribbon.
-		this.addRibbonIcon('dice', 'Sample', (evt: MouseEvent) => {
-			// Called when the user clicks the icon.
-			new Notice('This is a notice!');
+		this.addCommand({
+			id: COMMAND.GENERATE_SUMMARY_ID,
+			name: COMMAND.GENERATE_SUMMARY_NAME,
+			callback: () => this.generateSummary(),
 		});
 
-		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
-		const statusBarItemEl = this.addStatusBarItem();
-		statusBarItemEl.setText('Status bar text');
-
-		// This adds a simple command that can be triggered anywhere
-		this.addCommand({
-			id: 'open-modal-simple',
-			name: 'Open modal (simple)',
-			callback: () => {
-				new SampleModal(this.app).open();
-			}
-		});
-		// This adds an editor command that can perform some operation on the current editor instance
-		this.addCommand({
-			id: 'replace-selected',
-			name: 'Replace selected content',
-			editorCallback: (editor: Editor, view: MarkdownView) => {
-				editor.replaceSelection('Sample editor command');
-			}
-		});
-		// This adds a complex command that can check whether the current state of the app allows execution of the command
-		this.addCommand({
-			id: 'open-modal-complex',
-			name: 'Open modal (complex)',
-			checkCallback: (checking: boolean) => {
-				// Conditions to check
-				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
-				if (markdownView) {
-					// If checking is true, we're simply "checking" if the command can be run.
-					// If checking is false, then we want to actually perform the operation.
-					if (!checking) {
-						new SampleModal(this.app).open();
-					}
-
-					// This command will only show up in Command Palette when the check function returns true
-					return true;
+		this.registerEvent(
+			this.app.workspace.on("file-menu", (menu, file) => {
+				if (file instanceof TFolder) {
+					menu.addItem((item) => {
+						item.setTitle(CONTEXT_MENU.GENERATE_SUMMARY_TITLE)
+							.setIcon(CONTEXT_MENU.GENERATE_SUMMARY_ICON)
+							.onClick(() => this.generateSummaryForFolder(file));
+					});
 				}
-				return false;
-			}
-		});
+			}),
+		);
 
-		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new SampleSettingTab(this.app, this));
-
-		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
-		// Using this function will automatically remove the event listener when this plugin is disabled.
-		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
-			new Notice("Click");
-		});
-
-		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
-
+		this.addSettingTab(new DirectorySummarySettingTab(this.app, this));
 	}
 
-	onunload() {
-	}
+	onunload() {}
 
 	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData() as Partial<MyPluginSettings>);
+		this.settings = Object.assign(
+			{},
+			DEFAULT_SETTINGS,
+			(await this.loadData()) as Partial<DirectorySummarySettings>,
+		);
 	}
 
 	async saveSettings() {
 		await this.saveData(this.settings);
 	}
-}
 
-class SampleModal extends Modal {
-	constructor(app: App) {
-		super(app);
+	// Prefer the file explorer's focused item, fall back to the active file's parent.
+	private resolveTargetFolder(): TFolder | null {
+		try {
+			const leaves = this.app.workspace.getLeavesOfType("file-explorer");
+			if (leaves.length > 0) {
+				const view = leaves[0]?.view as unknown as FileExplorerView;
+				const focused = view?.focusedItem?.file;
+				if (focused instanceof TFolder) return focused;
+				if (focused instanceof TFile) return focused.parent ?? null;
+			}
+		} catch (err) {
+			console.error(NOTICE.EXPLORER_STATE_ERROR, err);
+			new Notice(NOTICE.EXPLORER_STATE_ERROR);
+		}
+
+		const activeFile = this.app.workspace.getActiveFile();
+		return activeFile?.parent ?? null;
 	}
 
-	onOpen() {
-		let {contentEl} = this;
-		contentEl.setText('Woah!');
+	async generateSummary() {
+		const folder = this.resolveTargetFolder();
+		if (!folder) {
+			new Notice(NOTICE.NO_TARGET_FOLDER);
+			return;
+		}
+		await this.generateSummaryForFolder(folder);
 	}
 
-	onClose() {
-		const {contentEl} = this;
-		contentEl.empty();
+	async generateSummaryForFolder(folder: TFolder) {
+		const folderName = folder.isRoot() ? this.app.vault.getName() : folder.name;
+		const fileName = this.settings.outputFileName.replace("{folder}", folderName);
+		const outputPath = folder.isRoot()
+			? `${fileName}.md`
+			: `${folder.path}/${fileName}.md`;
+
+		const content = this.buildContent(folder, 1);
+
+		const existing = this.app.vault.getAbstractFileByPath(outputPath);
+		if (existing instanceof TFile) {
+			await this.app.vault.modify(existing, content);
+		} else {
+			await this.app.vault.create(outputPath, content);
+		}
+
+		new Notice(NOTICE.SUMMARY_WRITTEN(outputPath));
+	}
+
+	private buildFileLink(file: TFile): string {
+		const link =
+			file.extension === "md" ? `[[${file.basename}]]` : `[[${file.name}]]`;
+		if (file.extension === "md") {
+			const frontmatter = this.app.metadataCache.getFileCache(file)
+				?.frontmatter as Record<string, unknown> | undefined;
+			const title = frontmatter?.[this.settings.titleProperty];
+			if (typeof title === "string" && title.trim()) {
+				return `${link} - ${title.trim()}`;
+			}
+		}
+		return link;
+	}
+
+	buildContent(folder: TFolder, depth: number): string {
+		const { maxDepth, maxFilesPerDirectory, outputFileName } = this.settings;
+		const folderName = folder.isRoot() ? this.app.vault.getName() : folder.name;
+		const resolvedOutputName = outputFileName.replace("{folder}", folderName);
+
+		const heading = "#".repeat(depth);
+		const lines: string[] = [`${heading} ${folderName}`];
+
+		let files = folder.children
+			.filter((c): c is TFile => c instanceof TFile)
+			.filter((f) => f.basename !== resolvedOutputName)
+			.sort((a, b) => a.name.localeCompare(b.name));
+
+		if (maxFilesPerDirectory > 0) {
+			files = files.slice(0, maxFilesPerDirectory);
+		}
+
+		for (const file of files) {
+			lines.push(`- ${this.buildFileLink(file)}`);
+		}
+
+		const atMaxDepth = maxDepth > 0 && depth >= maxDepth;
+		if (!atMaxDepth) {
+			const subfolders = folder.children
+				.filter((c): c is TFolder => c instanceof TFolder)
+				.sort((a, b) => a.name.localeCompare(b.name));
+
+			for (const sub of subfolders) {
+				lines.push("");
+				lines.push(this.buildContent(sub, depth + 1));
+			}
+		}
+
+		return lines.join("\n");
 	}
 }
