@@ -42,4 +42,5 @@ Run the command `"Generate directory summary"` which will create a `{folder}_sum
     - Max directory depth to include in summary file
     - Max amount of files to include in summary file per directory
     - Specify a file property to show it's value in the summary file next to the backlink
-        - For ex: if a file "random.md" has a property "Title" with value "I love soccer" then when you generate the summary the list item will look like `- [[random]] - I love soccer`
+        - For ex: if a file "random.md" has a property "Title" with value "I love soccer" then when you generate the summary the list item will look like:
+           - `- [[random]] - I love soccer`
