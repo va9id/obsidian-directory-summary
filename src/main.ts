@@ -80,8 +80,13 @@ export default class DirectorySummaryPlugin extends Plugin {
 	}
 
 	async generateSummaryForFolder(folder: TFolder) {
-		const folderName = folder.isRoot() ? this.app.vault.getName() : folder.name;
-		const fileName = this.settings.outputFileName.replace("{folder}", folderName);
+		const folderName = folder.isRoot()
+			? this.app.vault.getName()
+			: folder.name;
+		const fileName = this.settings.outputFileName.replace(
+			"{folder}",
+			folderName,
+		);
 		const outputPath = folder.isRoot()
 			? `${fileName}.md`
 			: `${folder.path}/${fileName}.md`;
@@ -100,22 +105,51 @@ export default class DirectorySummaryPlugin extends Plugin {
 
 	private buildFileLink(file: TFile): string {
 		const link =
-			file.extension === "md" ? `[[${file.basename}]]` : `[[${file.name}]]`;
+			file.extension === "md"
+				? `[[${file.basename}]]`
+				: `[[${file.name}]]`;
+		let label = link;
+		let hasCheckboxProperty = false;
+
 		if (file.extension === "md") {
 			const frontmatter = this.app.metadataCache.getFileCache(file)
 				?.frontmatter as Record<string, unknown> | undefined;
 			const title = frontmatter?.[this.settings.titleProperty];
 			if (typeof title === "string" && title.trim()) {
-				return `${link} - ${title.trim()}`;
+				label = `${link} - ${title.trim()}`;
+			}
+			const { checkboxProperty, checkboxRegex } = this.settings;
+			if (checkboxProperty && frontmatter && checkboxProperty in frontmatter) {
+				hasCheckboxProperty = true;
+				if (checkboxRegex) {
+					try {
+						const raw = frontmatter[checkboxProperty];
+						const value =
+							typeof raw === "string" || typeof raw === "number" || typeof raw === "boolean"
+								? String(raw)
+								: "";
+						const checked = new RegExp(checkboxRegex).test(value);
+						return checked ? `[X] ${label}` : `[ ] ${label}`;
+					} catch {
+						// invalid regex — fall through to unchecked
+					}
+				}
 			}
 		}
-		return link;
+
+		return hasCheckboxProperty ? `[ ] ${label}` : label;
 	}
 
 	buildContent(folder: TFolder, depth: number): string {
-		const { maxDepth, maxFilesPerDirectory, outputFileName } = this.settings;
-		const folderName = folder.isRoot() ? this.app.vault.getName() : folder.name;
-		const resolvedOutputName = outputFileName.replace("{folder}", folderName);
+		const { maxDepth, maxFilesPerDirectory, outputFileName } =
+			this.settings;
+		const folderName = folder.isRoot()
+			? this.app.vault.getName()
+			: folder.name;
+		const resolvedOutputName = outputFileName.replace(
+			"{folder}",
+			folderName,
+		);
 
 		const heading = "#".repeat(depth);
 		const lines: string[] = [`${heading} ${folderName}`];

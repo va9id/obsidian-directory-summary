@@ -7,13 +7,17 @@ export interface DirectorySummarySettings {
 	maxDepth: number;
 	maxFilesPerDirectory: number;
 	titleProperty: string;
+	checkboxProperty: string;
+	checkboxRegex: string;
 }
 
 export const DEFAULT_SETTINGS: DirectorySummarySettings = {
-	outputFileName: '{folder}_summary',
+	outputFileName: "{folder}_summary",
 	maxDepth: 5,
 	maxFilesPerDirectory: 100,
-	titleProperty: 'Title',
+	titleProperty: "Title",
+	checkboxProperty: "",
+	checkboxRegex: "",
 };
 
 export class DirectorySummarySettingTab extends PluginSettingTab {
@@ -82,6 +86,32 @@ export class DirectorySummarySettingTab extends PluginSettingTab {
 						const parsed = parseInt(value, 10);
 						this.plugin.settings.maxFilesPerDirectory =
 							isNaN(parsed) || parsed < 0 ? 0 : parsed;
+						await this.plugin.saveSettings();
+					}),
+			);
+
+		new Setting(containerEl)
+			.setName(SETTING.CHECKBOX_PROPERTY.NAME)
+			.setDesc(SETTING.CHECKBOX_PROPERTY.DESC)
+			.addText((text) =>
+				text
+					.setPlaceholder(SETTING.CHECKBOX_PROPERTY.PLACEHOLDER)
+					.setValue(this.plugin.settings.checkboxProperty)
+					.onChange(async (value) => {
+						this.plugin.settings.checkboxProperty = value.trim();
+						await this.plugin.saveSettings();
+					}),
+			);
+
+		new Setting(containerEl)
+			.setName(SETTING.CHECKBOX_REGEX.NAME)
+			.setDesc(SETTING.CHECKBOX_REGEX.DESC)
+			.addText((text) =>
+				text
+					.setPlaceholder(SETTING.CHECKBOX_REGEX.PLACEHOLDER)
+					.setValue(this.plugin.settings.checkboxRegex)
+					.onChange(async (value) => {
+						this.plugin.settings.checkboxRegex = value.trim();
 						await this.plugin.saveSettings();
 					}),
 			);
