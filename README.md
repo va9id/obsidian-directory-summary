@@ -37,10 +37,9 @@ Run the command `"Generate directory summary"` which will create a `{folder}_sum
 ### Features
 
 - File names appear in the summary as backlinks
-- Can configure the following settings in the extension:
-    - Default naming scheme of the summary file
-    - Max directory depth to include in summary file
-    - Max amount of files to include in summary file per directory
-    - Specify a file property to show it's value in the summary file next to the backlink
-        - For ex: if a file "random.md" has a property "Title" with value "I love soccer" then when you generate the summary the list item will look like:
-           - `- [[random]] - I love soccer`
+- Can configure various different settings for your summary file like:
+    - Max directory search depth and files per directory included in summary.
+    - Summary file naming scheme.
+    - Specify file property to be included with each file name in the summary.
+    - Specify file property to use checkboxes in the summary, and specify a regex for its value to control whether its checked or unchecked.
+    - Specify files/directories to exclude from the summary file
