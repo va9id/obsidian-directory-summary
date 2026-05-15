@@ -1,7 +1,7 @@
 {
 	"id": "directory-summary",
 	"name": "Directory Summary",
-	"version": "1.1.1",
+	"version": "1.1.2",
 	"minAppVersion": "0.15.0",
 	"description": "Generate a summary note for any directory in your vault.",
 	"isDesktopOnly": false,
