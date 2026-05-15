@@ -40,11 +40,11 @@ export const SETTING = {
 	CHECKBOX_PROPERTY: {
 		NAME: "Checkbox property",
 		DESC: "Frontmatter property name that, when present on a file, renders that file's list item as a checkbox. Leave empty to disable.",
-		PLACEHOLDER: "",
+		PLACEHOLDER: "Status",
 	},
 	CHECKBOX_REGEX: {
 		NAME: "Checkbox regex",
-		DESC: "Regex to test against the 'Checkbox property' value. If it matches, the checkbox is checked [X]; otherwise it is unchecked [ ]. Only works when 'Checkbox property' is set. Sample placeholder regex would match when the property has any value. Default is empty meaning checkboxes are always unchecked. Copy the placeholder regex which matches when the property has any non-empty value.",
+		DESC: "Regex to test against the 'Checkbox property' value. If it matches, the checkbox is checked [X]; otherwise it is unchecked [ ]. Only works when 'Checkbox property' is set. Default is empty meaning checkboxes are always unchecked. Copy the placeholder regex which matches when the property has any non-empty value.",
 		PLACEHOLDER: "^.+$",
 	},
 } as const;

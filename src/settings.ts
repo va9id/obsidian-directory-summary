@@ -15,7 +15,7 @@ export const DEFAULT_SETTINGS: DirectorySummarySettings = {
 	outputFileName: "{folder}_summary",
 	maxDepth: 5,
 	maxFilesPerDirectory: 100,
-	titleProperty: "Title",
+	titleProperty: "",
 	checkboxProperty: "",
 	checkboxRegex: "",
 };
