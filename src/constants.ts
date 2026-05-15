@@ -37,6 +37,11 @@ export const SETTING = {
 		DESC: "Maximum number of files to list per directory. Set to 0 for unlimited.",
 		PLACEHOLDER: "100",
 	},
+	EXCLUDE_PATTERNS: {
+		NAME: "Exclude patterns",
+		DESC: "Comma-separated list of file or folder name patterns to skip. Use * as a wildcard (e.g. attachments, _*, *.js). Matching is case-insensitive.",
+		PLACEHOLDER: "attachments, _*, *.js",
+	},
 	CHECKBOX_PROPERTY: {
 		NAME: "Checkbox property",
 		DESC: "Frontmatter property name that, when present on a file, renders that file's list item as a checkbox. Leave empty to disable.",

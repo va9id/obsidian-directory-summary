@@ -103,6 +103,18 @@ export default class DirectorySummaryPlugin extends Plugin {
 		new Notice(NOTICE.SUMMARY_WRITTEN(outputPath));
 	}
 
+	private isExcluded(name: string): boolean {
+		const patterns = this.settings.excludePatterns
+			.split(",")
+			.map((p) => p.trim())
+			.filter((p) => p.length > 0);
+		return patterns.some((pattern) => {
+			const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, "\\$&");
+			const regexStr = escaped.replace(/\*/g, ".*").replace(/\?/g, ".");
+			return new RegExp(`^${regexStr}$`, "i").test(name);
+		});
+	}
+
 	private buildFileLink(file: TFile): string {
 		const link =
 			file.extension === "md"
@@ -119,13 +131,19 @@ export default class DirectorySummaryPlugin extends Plugin {
 				label = `${link} - ${title.trim()}`;
 			}
 			const { checkboxProperty, checkboxRegex } = this.settings;
-			if (checkboxProperty && frontmatter && checkboxProperty in frontmatter) {
+			if (
+				checkboxProperty &&
+				frontmatter &&
+				checkboxProperty in frontmatter
+			) {
 				hasCheckboxProperty = true;
 				if (checkboxRegex) {
 					try {
 						const raw = frontmatter[checkboxProperty];
 						const value =
-							typeof raw === "string" || typeof raw === "number" || typeof raw === "boolean"
+							typeof raw === "string" ||
+							typeof raw === "number" ||
+							typeof raw === "boolean"
 								? String(raw)
 								: "";
 						const checked = new RegExp(checkboxRegex).test(value);
@@ -157,6 +175,7 @@ export default class DirectorySummaryPlugin extends Plugin {
 		let files = folder.children
 			.filter((c): c is TFile => c instanceof TFile)
 			.filter((f) => f.basename !== resolvedOutputName)
+			.filter((f) => !this.isExcluded(f.name))
 			.sort((a, b) => a.name.localeCompare(b.name));
 
 		if (maxFilesPerDirectory > 0) {
@@ -171,6 +190,7 @@ export default class DirectorySummaryPlugin extends Plugin {
 		if (!atMaxDepth) {
 			const subfolders = folder.children
 				.filter((c): c is TFolder => c instanceof TFolder)
+				.filter((f) => !this.isExcluded(f.name))
 				.sort((a, b) => a.name.localeCompare(b.name));
 
 			for (const sub of subfolders) {

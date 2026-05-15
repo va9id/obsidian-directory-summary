@@ -7,6 +7,7 @@ export interface DirectorySummarySettings {
 	maxDepth: number;
 	maxFilesPerDirectory: number;
 	titleProperty: string;
+	excludePatterns: string;
 	checkboxProperty: string;
 	checkboxRegex: string;
 }
@@ -16,6 +17,7 @@ export const DEFAULT_SETTINGS: DirectorySummarySettings = {
 	maxDepth: 5,
 	maxFilesPerDirectory: 100,
 	titleProperty: "",
+	excludePatterns: "",
 	checkboxProperty: "",
 	checkboxRegex: "",
 };
@@ -86,6 +88,19 @@ export class DirectorySummarySettingTab extends PluginSettingTab {
 						const parsed = parseInt(value, 10);
 						this.plugin.settings.maxFilesPerDirectory =
 							isNaN(parsed) || parsed < 0 ? 0 : parsed;
+						await this.plugin.saveSettings();
+					}),
+			);
+
+		new Setting(containerEl)
+			.setName(SETTING.EXCLUDE_PATTERNS.NAME)
+			.setDesc(SETTING.EXCLUDE_PATTERNS.DESC)
+			.addText((text) =>
+				text
+					.setPlaceholder(SETTING.EXCLUDE_PATTERNS.PLACEHOLDER)
+					.setValue(this.plugin.settings.excludePatterns)
+					.onChange(async (value) => {
+						this.plugin.settings.excludePatterns = value.trim();
 						await this.plugin.saveSettings();
 					}),
 			);
